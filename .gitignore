@@ -1,0 +1,8 @@
+# Dataset
+data/
+
+# Pycharm
+.idea/
+__pycache__/
+
+**/!.gitkeep
