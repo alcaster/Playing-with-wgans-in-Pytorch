@@ -22,21 +22,26 @@ class TrackerDeque(deque):
 
 class CheckpointSaver:
 
-    def __init__(self, dir: str, max_checkpoints: int = None, only_weights=True):
+    def __init__(self, dir: str, max_checkpoints: int = None, prefix=None, only_weights=True):
         """
         Performs model saving with max checkpoints.
         :param dir: Directory when checkpoint will be stored.
         :param max_checkpoints: Max number of checkpoint to store.
+        :param prefix: Prefix for save filenames.
         :param only_weights: Store whole model or only weights. Default True.
         """
         self.dir = dir
         self.max_checkpoints = max_checkpoints
         self.checkpoitns = TrackerDeque(max_checkpoints)
         self.only_weights = only_weights
+        self.prefix = prefix
         os.makedirs(dir, exist_ok=True)
 
     def save(self, model: nn.Module, step: int, optimizer: torch.optim.Optimizer, epoch: int, **kwargs):
-        checkpoint_path = os.path.join(self.dir, str(step) + ".pth")
+        if self.prefix:
+            checkpoint_path = os.path.join(self.dir, f"{self.prefix}_{str(step)}.pth")
+        else:
+            checkpoint_path = os.path.join(self.dir, str(step) + ".pth")
         save_state = {
             'epoch': epoch + 1,
             'optimizer': optimizer.state_dict(),
@@ -50,8 +55,11 @@ class CheckpointSaver:
         print(f"Saved in {checkpoint_path}")
         popped = self.checkpoitns.append(checkpoint_path)
         if popped:
-            os.remove(popped)
-            print("removed")
+            try:
+                os.remove(popped)
+                print("removed")
+            except OSError:
+                pass
 
     @staticmethod
     def load(path, model, optimizer):
